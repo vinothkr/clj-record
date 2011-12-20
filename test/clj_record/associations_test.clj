@@ -68,3 +68,14 @@
       (is (= "manu2" (:name eager-manu2)))
       (is (= [prod1 prod2] (:products eager-manu1)))
       (is (= [prod3 prod4] (:products eager-manu2))))))
+
+;This allows nested eager-fetching (TODO: make a cleaner interface that exposes this)
+(defdbtest eager-fetching-can-be-nested-with-functions
+  (let [manu1 (manufacturer/create (valid-manufacturer-with {:name "manu1" :grade 99}))
+        prod1 (product/create {:name "prod1" :manufacturer_id (:id manu1)})
+        prod2 (product/create {:name "prod2" :manufacturer_id (:id manu1)})
+        manu2 (manufacturer/create (valid-manufacturer-with {:name "manu2" :grade 99}))
+        prod3 (product/create {:name "prod3" :manufacturer_id (:id manu2)})
+        prod4 (product/create {:name "prod4" :manufacturer_id (:id manu2)})]
+    (let [[eager-manu1 eager-manu2] (manufacturer/eager-fetch-products (manufacturer/find-records {:grade 99}) [(partial map (partial conj {:eager-fetched "yes"}))])]
+      (is (= ["yes","yes"] (map :eager-fetched (:products eager-manu1)))))))
