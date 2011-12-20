@@ -6,7 +6,12 @@
   (clj-record.core/find-records model-name {foreign-key (apply clj-record.query/in (map (fn [record] (:id record)) records))}))
 
 (defn -more-eager [records options]
-  (cond (not (empty? options))(recur ((first options) records) (rest options))
+  (cond (and (map? options) (not (empty? options)))
+        (let [even-more-eager (first (keys options))] (do (println (options even-more-eager))
+                                                          (recur (even-more-eager records (options even-more-eager)) (dissoc options even-more-eager))))
+        (and (vector? options) (not (empty? options)))
+        (recur ((first options) records) (rest options))
+        (fn? options) (do (println "Here") (options records))
         :default records))
 
 (defn eager-fetch
