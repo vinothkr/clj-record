@@ -77,12 +77,12 @@ instance."
   Given a where-params vector, uses it as-is. (See clojure.java.jdbc/with-query-results.)
   Given a map of attribute-value pairs, uses to-conditions to convert to where-params."
   [model-name attributes-or-where-params]
-  (let [[parameterized-where & values]
-          (if (map? attributes-or-where-params)
-            (to-conditions attributes-or-where-params)
-            attributes-or-where-params)
-          select-query (format "select * from %s where %s" (table-name model-name) parameterized-where)]
-    (find-by-sql model-name (apply vector select-query values))))
+     (let [[parameterized-where & values]
+           (if (map? attributes-or-where-params)
+             (to-conditions attributes-or-where-params)
+             attributes-or-where-params)
+           select-query (format "select * from %s where %s" (table-name model-name) parameterized-where)]
+       (find-by-sql model-name (apply vector select-query values))))
 
 (defn find-record
   "Returns the first matching record. This is just (first (find-records ...)).
@@ -214,10 +214,13 @@ instance."
         ([attributes#] (record-count ~model-name attributes#)))
       (defn ~'get-record [id#]
         (get-record ~model-name id#))
-      (defn ~'find-records [attributes#]
-        (find-records ~model-name attributes#))
-      (defn ~'find-record [attributes#]
-        (find-record ~model-name attributes#))
+      (defn ~'find-records
+        ([attributes#] (find-records ~model-name attributes#))
+        ([attributes# eager-options#] (clj-record.associations/more-eager (find-records ~model-name attributes#) eager-options#)))
+      (defn ~'find-record
+        ([attributes#] (find-record ~model-name attributes#))
+        ;Ugly
+        ([attributes# eager-options#] (first (clj-record.associations/more-eager (find-records ~model-name attributes#) eager-options#))))
       (defn ~'find-by-sql [select-query-and-values#]
         (find-by-sql ~model-name select-query-and-values#))
       (defn ~'create [attributes#]

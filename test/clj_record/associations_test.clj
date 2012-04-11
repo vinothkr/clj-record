@@ -3,7 +3,9 @@
     [clj-record.test-model.manufacturer :as manufacturer]
     [clj-record.test-model.product :as product]
     [clj-record.test-model.person :as person]
-    [clj-record.test-model.thing-one :as thing-one])
+    [clj-record.test-model.thing-one :as thing-one]
+    [clj-record.test-model.thing-two :as thing-two]
+    [clj-record.test-model.thing-three :as thing-three])
   (:use clojure.test
         clj-record.test-helper))
 
@@ -70,12 +72,20 @@
       (is (= [prod3 prod4] (:products eager-manu2))))))
 
 ;This allows nested eager-fetching (TODO: make a cleaner interface that exposes this)
-(defdbtest eager-fetching-can-be-nested-with-functions
-  (let [manu1 (manufacturer/create (valid-manufacturer-with {:name "manu1" :grade 99}))
-        prod1 (product/create {:name "prod1" :manufacturer_id (:id manu1)})
-        prod2 (product/create {:name "prod2" :manufacturer_id (:id manu1)})
-        manu2 (manufacturer/create (valid-manufacturer-with {:name "manu2" :grade 99}))
-        prod3 (product/create {:name "prod3" :manufacturer_id (:id manu2)})
-        prod4 (product/create {:name "prod4" :manufacturer_id (:id manu2)})]
-    (let [[eager-manu1 eager-manu2] (manufacturer/eager-fetch-products (manufacturer/find-records {:grade 99}) [(partial map (partial conj {:eager-fetched "yes"}))])]
-      (is (= ["yes","yes"] (map :eager-fetched (:products eager-manu1)))))))
+(defdbtest find-records-can-do-nested-eager-fetching-of-has-many-associations
+  (let [person1 (person/create {:name "a person"})
+        thing-one1 (thing-one/create {:name "thing-one1" :owner_person_id (:id person1)})
+        thing-one2 (thing-one/create {:name "thing-one2" :owner_person_id (:id person1)})
+        thing-two1 (thing-two/create {:thing_one_id (:id thing-one1)})
+        thing-two2 (thing-two/create {:thing_one_id (:id thing-one1)})
+        thing-three1 (thing-three/create {:thing_two_id (:id thing-two1)})
+        thing-three2 (thing-three/create {:thing_two_id (:id thing-two1)})]
+    (let [person-fetched (person/find-record {:name "a person"}
+                                              {person/eager-fetch-things
+                                               {thing-one/eager-fetch-thing-twos
+                                                [thing-two/eager-fetch-thing-threes]}})]
+      (is (= "a person" (:name person-fetched)))
+      (is (= ["thing-one1" "thing-one2"] (map :name (:things person-fetched))))
+      (is (= (map :id [thing-two1 thing-two2]) (map :id (:thing-twos (first (:things person-fetched))))))
+      (is (= (map :id [thing-three1 thing-three2]) (map :id (:thing-threes (first (:thing-twos (first (:things person-fetched)))))))))))
+                               

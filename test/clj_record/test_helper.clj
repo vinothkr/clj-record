@@ -49,27 +49,31 @@
         [:founded "VARCHAR(4)"]
         [:grade   :int]
         :table-spec (get-table-spec db)]
-    :productos
+   :productos
       [ (get-id-key-spec db "product_pk")
         [:name            "VARCHAR(32)" "NOT NULL"]
         [:price           :int]
         [:manufacturer_id :int "NOT NULL"]
         :table-spec (get-table-spec db)]
-    :person
+   :person
       [ (get-id-key-spec db "person_pk")
         [:name             "VARCHAR(32) NOT NULL"]
         [:mother_id        :int]
         [:father_person_id :int]
         :table-spec (get-table-spec db)]
-    :thing_one
+   :thing_one
       [ (get-id-key-spec db "thing_one_pk")
         [:name            "VARCHAR(32)" "NOT NULL"]
         [:owner_person_id   :int]
         :table-spec (get-table-spec db)]
-    :thing_two
+   :thing_two
       [ (get-id-key-spec db "thing_two_pk")
         [:thing_one_id   :int "NOT NULL"]
-        :table-spec (get-table-spec db)] })
+        :table-spec (get-table-spec db)]
+   :thing_three
+      [ (get-id-key-spec db "thing_one_pk")
+        [:thing_two_id   :int "NOT NULL"]
+        :table-spec (get-table-spec db)]})
 
 (defn drop-tables
   ([] (drop-tables (keys table-specs)))

@@ -3,20 +3,19 @@
   (:require clj-record.query))
 
 (defn -associate [model-name records foreign-key]
-  (clj-record.core/find-records model-name {foreign-key (apply clj-record.query/in (map (fn [record] (:id record)) records))}))
+  (clj-record.core/find-records model-name {foreign-key (apply clj-record.query/in (map :id records))}))
 
-(defn -more-eager [records options]
+(defn more-eager [records options]
   (cond (and (map? options) (not (empty? options)))
-        (let [even-more-eager (first (keys options))] (do (println (options even-more-eager))
-                                                          (recur (even-more-eager records (options even-more-eager)) (dissoc options even-more-eager))))
+        (let [even-more-eager (first (keys options))] (recur (even-more-eager records (options even-more-eager)) (dissoc options even-more-eager)))
         (and (vector? options) (not (empty? options)))
         (recur ((first options) records) (rest options))
-        (fn? options) (do (println "Here") (options records))
+        (fn? options) (options records)
         :default records))
 
 (defn eager-fetch
   ([model-name foreign-key attribute-name records options]
-     (let [fetched-records (-more-eager (-associate model-name records foreign-key) options)]
+     (let [fetched-records (more-eager (-associate model-name records foreign-key) options)]
        (map (fn [record] (conj {attribute-name (filter (fn [fetched] (= (:id record) (foreign-key fetched))) fetched-records)} record)) records)))
   ([model-name foreign-key attribute-name records]
      (eager-fetch model-name foreign-key attribute-name records [])))
